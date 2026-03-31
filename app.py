@@ -1,7 +1,11 @@
 from flask import Flask, render_template, request, jsonify
+import os
 
-# ✅ Added template_folder for safety
-app = Flask(__name__, template_folder='templates')
+# ✅ FIX: absolute template path (important for Render)
+base_dir = os.path.abspath(os.path.dirname(__file__))
+template_dir = os.path.join(base_dir, 'templates')
+
+app = Flask(__name__, template_folder=template_dir)
 
 WINS = [
     [0,1,2],[3,4,5],[6,7,8],
@@ -51,12 +55,12 @@ def best_move(board):
                 move = i
     return move
 
-# ✅ FIX: Added HEAD method support
+# ✅ FIX: allow HEAD request (Render health check)
 @app.route('/', methods=['GET', 'HEAD'])
 def index():
     return render_template('index.html')
 
-# ✅ FIX: Safe JSON handling
+# ✅ FIX: safe JSON handling
 @app.route('/api/ai-move', methods=['POST'])
 def ai_move():
     data = request.get_json()
@@ -79,7 +83,7 @@ def ai_move():
         'winner': 'X' if win_line else None
     })
 
-# ✅ FIX: Safe JSON handling
+# ✅ FIX: safe JSON handling
 @app.route('/api/check', methods=['POST'])
 def check():
     data = request.get_json()
@@ -99,6 +103,6 @@ def check():
         'winner': marker if win_line else None
     })
 
-# ✅ FIX: Proper production-safe run
+# ✅ production safe
 if __name__ == '__main__':
     app.run()
