@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 
-app = Flask(__name__)
+# ✅ Added template_folder for safety
+app = Flask(__name__, template_folder='templates')
 
 WINS = [
     [0,1,2],[3,4,5],[6,7,8],
@@ -50,14 +51,20 @@ def best_move(board):
                 move = i
     return move
 
-@app.route('/')
+# ✅ FIX: Added HEAD method support
+@app.route('/', methods=['GET', 'HEAD'])
 def index():
     return render_template('index.html')
 
+# ✅ FIX: Safe JSON handling
 @app.route('/api/ai-move', methods=['POST'])
 def ai_move():
     data = request.get_json()
-    board = data.get('board')  # list of 9 items: 'X', 'O', or None
+
+    if not data or 'board' not in data:
+        return jsonify({"error": "Invalid request"}), 400
+
+    board = data.get('board')
 
     move = best_move(board)
     board[move] = 'X'
@@ -72,9 +79,14 @@ def ai_move():
         'winner': 'X' if win_line else None
     })
 
+# ✅ FIX: Safe JSON handling
 @app.route('/api/check', methods=['POST'])
 def check():
     data = request.get_json()
+
+    if not data or 'board' not in data or 'marker' not in data:
+        return jsonify({"error": "Invalid request"}), 400
+
     board = data.get('board')
     marker = data.get('marker')
 
@@ -87,5 +99,6 @@ def check():
         'winner': marker if win_line else None
     })
 
+# ✅ FIX: Proper production-safe run
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
