@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tic Tac Toe — Cosmic Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg1:#0d0221; --bg2:#1a0533; --bg3:#0a1628;
+  --x-a:#ff6b6b; --x-b:#ff2d78;
+  --o-a:#43e8ff; --o-b:#7b61ff;
+  --font-h:'Bungee',cursive;
+  --font-b:'Nunito',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;font-family:var(--font-b);background:var(--bg1);
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+.bg{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%,rgba(123,97,255,.28) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 70% at 85% 80%,rgba(255,45,120,.22) 0%,transparent 55%),
+    radial-gradient(ellipse 70% 50% at 50% 50%,rgba(6,214,160,.12) 0%,transparent 60%),
+    radial-gradient(ellipse 90% 80% at 70% 10%,rgba(67,232,255,.15) 0%,transparent 55%),
+    linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 50%,var(--bg3) 100%);
+  animation:bgB 8s ease-in-out infinite alternate}
+@keyframes bgB{from{filter:brightness(1)}to{filter:brightness(1.15)}}
+.orb{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none;z-index:0;opacity:.3;animation:flt linear infinite}
+.o1{width:360px;height:360px;background:radial-gradient(#7b61ff,#ff2d78);top:-100px;left:-100px;animation-duration:18s}
+.o2{width:260px;height:260px;background:radial-gradient(#43e8ff,#06d6a0);bottom:-70px;right:-70px;animation-duration:14s}
+.o3{width:200px;height:200px;background:radial-gradient(#ffd166,#ff9f1c);top:38%;left:68%;animation-duration:22s}
+@keyframes flt{0%{transform:translate(0,0) scale(1)}33%{transform:translate(28px,-18px) scale(1.08)}
+  66%{transform:translate(-18px,28px) scale(.95)}100%{transform:translate(0,0) scale(1)}}
+#cv{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* SCREENS */
+.screen{display:none;position:relative;z-index:2}
+.screen.active{display:flex}
+
+.card{display:flex;flex-direction:column;align-items:center;gap:20px;padding:34px 26px;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);border-radius:28px;
+  backdrop-filter:blur(20px);
+  box-shadow:0 0 0 1px rgba(123,97,255,.2),0 28px 90px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.1);
+  animation:cardIn .55s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(28px) scale(.92)}to{opacity:1;transform:none}}
+
+.title{font-family:var(--font-h);font-size:clamp(1.8rem,6vw,2.9rem);letter-spacing:.07em;
+  background:linear-gradient(135deg,#ffd166 0%,#ff9f1c 28%,#ff6b6b 58%,#c77dff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(255,165,0,.55));animation:tShim 4s ease-in-out infinite}
+@keyframes tShim{0%,100%{filter:drop-shadow(0 0 18px rgba(255,165,0,.5))}50%{filter:drop-shadow(0 0 32px rgba(255,165,0,.9))}}
+.badge{display:inline-block;margin-top:6px;padding:3px 16px;border-radius:99px;
+  background:linear-gradient(90deg,#7b61ff,#43e8ff);font-size:.62rem;font-weight:800;
+  letter-spacing:.22em;color:#fff;text-transform:uppercase;box-shadow:0 0 18px rgba(123,97,255,.55)}
+.hdr{text-align:center;line-height:1.1}
+
+/* MODE SCREEN */
+.mode-label{font-size:.65rem;font-weight:800;letter-spacing:.22em;color:rgba(255,255,255,.35);text-transform:uppercase}
+.mode-btns{display:flex;gap:14px;margin-top:10px}
+.mode-btn{width:138px;padding:18px 10px;border-radius:16px;border:1.5px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:8px;transition:transform .15s,border-color .2s,box-shadow .2s;color:#fff}
+.mode-btn:hover{transform:translateY(-3px) scale(1.05);border-color:rgba(199,125,255,.55);box-shadow:0 0 28px rgba(123,97,255,.3)}
+.mode-btn.ai-btn:hover{border-color:rgba(255,107,107,.55);box-shadow:0 0 28px rgba(255,45,120,.28)}
+.mode-icon{font-size:2.4rem}
+.mode-name{font-family:var(--font-h);font-size:.7rem;letter-spacing:.1em}
+.mode-desc{font-size:.6rem;color:rgba(255,255,255,.4);font-weight:600;text-align:center}
+
+/* NAMES SCREEN */
+.name-section{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.name-label{font-size:.6rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+.lx{color:#ff6b6b}.lo{color:#43e8ff}
+.name-input{width:100%;padding:11px 18px;border-radius:12px;border:1.5px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);color:#fff;font-family:var(--font-b);font-size:.95rem;font-weight:800;
+  outline:none;transition:border-color .2s,box-shadow .2s;text-align:center}
+.name-input::placeholder{color:rgba(255,255,255,.25)}
+.name-input:focus{border-color:rgba(199,125,255,.55);box-shadow:0 0 18px rgba(123,97,255,.25)}
+.name-input.ix:focus{border-color:rgba(255,107,107,.55);box-shadow:0 0 18px rgba(255,45,120,.2)}
+.name-input:disabled{opacity:.45;cursor:not-allowed}
+.ndiv{display:flex;align-items:center;gap:10px;width:100%;margin:2px 0}
+.ndiv::before,.ndiv::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+.ndiv span{font-size:.6rem;color:rgba(255,255,255,.2);font-weight:800;letter-spacing:.15em}
+.back-link{font-size:.65rem;font-weight:800;letter-spacing:.15em;color:rgba(255,255,255,.25);
+  text-transform:uppercase;cursor:pointer;transition:color .2s}
+.back-link:hover{color:rgba(255,255,255,.5)}
+
+/* SHARED BUTTON */
+.btn{padding:12px 32px;border-radius:12px;border:none;cursor:pointer;
+  font-family:var(--font-h);font-size:.76rem;letter-spacing:.13em;color:#fff;
+  background:linear-gradient(135deg,#7b61ff 0%,#ff2d78 45%,#ff9f1c 100%);background-size:200% 200%;
+  box-shadow:0 0 26px rgba(123,97,255,.5),0 4px 16px rgba(0,0,0,.4);
+  transition:transform .15s,box-shadow .2s;animation:bG 4s ease infinite;position:relative;overflow:hidden}
+@keyframes bG{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.18),transparent);border-radius:inherit}
+.btn:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 0 38px rgba(123,97,255,.7),0 8px 24px rgba(0,0,0,.4)}
+.btn:active{transform:scale(.97)}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  box-shadow:none;animation:none}
+.btn-ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);box-shadow:none}
+.btn-row{display:flex;gap:12px}
+
+/* GAME SCREEN */
+.sbar{padding:10px 28px;border-radius:12px;
+  background:linear-gradient(135deg,rgba(123,97,255,.2),rgba(6,214,160,.13));
+  border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+#st{font-size:.88rem;font-weight:800;letter-spacing:.08em;color:#fff;text-align:center;
+  min-width:230px;text-shadow:0 0 14px rgba(255,255,255,.4)}
+
+.turn-row{display:flex;align-items:center;gap:12px}
+.dot{width:10px;height:10px;border-radius:50%;opacity:.25;transition:opacity .3s,box-shadow .3s,transform .3s}
+.dot.active{opacity:1;transform:scale(1.3)}
+.dot-x{background:linear-gradient(135deg,var(--x-a),var(--x-b))}
+.dot-x.active{box-shadow:0 0 12px rgba(255,45,120,.7)}
+.dot-o{background:linear-gradient(135deg,var(--o-a),var(--o-b))}
+.dot-o.active{box-shadow:0 0 12px rgba(67,232,255,.7)}
+
+.board{position:relative;display:grid;
+  grid-template-columns:repeat(3,96px);grid-template-rows:repeat(3,96px);
+  gap:10px;padding:14px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(123,97,255,.1),rgba(255,45,120,.08));
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 0 60px rgba(123,97,255,.18),inset 0 0 30px rgba(0,0,0,.35)}
+
+.cell{width:96px;height:96px;
+  background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.11);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-h);font-size:2.4rem;cursor:pointer;
+  transition:transform .15s,box-shadow .2s,border-color .2s,background .2s;
+  position:relative;overflow:hidden;user-select:none}
+.cell:hover:not(.cx):not(.co){border-color:rgba(199,125,255,.55);
+  box-shadow:0 0 0 1px rgba(199,125,255,.3),0 0 22px rgba(199,125,255,.25);
+  transform:scale(1.07) translateY(-2px);
+  background:linear-gradient(135deg,rgba(123,97,255,.18),rgba(199,125,255,.12))}
+
+.cx{background:linear-gradient(135deg,rgba(255,107,107,.2),rgba(255,45,120,.15));
+  border-color:rgba(255,107,107,.55);cursor:not-allowed;
+  box-shadow:0 0 22px rgba(255,45,120,.28),inset 0 0 12px rgba(255,107,107,.1)}
+.cx::after{content:'✕';position:absolute;font-family:var(--font-h);font-size:2.5rem;
+  background:linear-gradient(135deg,var(--x-a),var(--x-b));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 10px rgba(255,107,107,.85))}
+
+.co{background:linear-gradient(135deg,rgba(67,232,255,.15),rgba(123,97,255,.17));
+  border-color:rgba(67,232,255,.55);cursor:not-allowed;
+  box-shadow:0 0 22px rgba(67,232,255,.22),inset 0 0 12px rgba(67,232,255,.08)}
+.co::after{content:'○';position:absolute;font-family:var(--font-h);font-size:2.7rem;
+  background:linear-gradient(135deg,var(--o-a),var(--o-b));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 10px rgba(67,232,255,.85))}
+
+@keyframes pop{0%{transform:scale(.3) rotate(-15deg);opacity:0}60%{transform:scale(1.18) rotate(4deg)}
+  80%{transform:scale(.93)}100%{transform:scale(1) rotate(0);opacity:1}}
+.cell.pop{animation:pop .38s cubic-bezier(.34,1.56,.64,1) both}
+
+.wsvg{position:absolute;inset:14px;width:calc(100% - 28px);height:calc(100% - 28px);
+  pointer-events:none;z-index:10;overflow:visible}
+#wl{stroke-linecap:round;stroke-width:.1;stroke-dasharray:5;stroke-dashoffset:5;
+  transition:stroke-dashoffset .5s ease}
+#wl.show{stroke-dashoffset:0}
+
+.rov{position:absolute;inset:0;border-radius:20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  z-index:20;background:linear-gradient(135deg,rgba(13,2,33,.92),rgba(26,5,51,.94));
+  backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity .4s;padding:16px}
+.rov.show{opacity:1;pointer-events:auto}
+.r-emoji{font-size:2.8rem;animation:bop .55s ease infinite alternate}
+@keyframes bop{from{transform:translateY(0)}to{transform:translateY(-9px)}}
+.r-name{font-family:var(--font-h);font-size:1.25rem;letter-spacing:.06em;
+  background:linear-gradient(135deg,#ffd166,#ff9f1c,#ff6b6b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 14px rgba(255,165,0,.85));text-align:center;word-break:break-word;max-width:260px}
+.r-sub{font-size:.65rem;font-weight:800;letter-spacing:.18em;color:rgba(255,255,255,.35);text-transform:uppercase}
+
+.scores{display:flex;align-items:center;gap:14px}
+.sc{display:flex;flex-direction:column;align-items:center;gap:2px;
+  min-width:88px;max-width:118px;padding:10px 14px;border-radius:14px;
+  backdrop-filter:blur(8px);transition:transform .3s}
+.sc-x{background:linear-gradient(135deg,rgba(255,107,107,.17),rgba(255,45,120,.13));
+  border:1px solid rgba(255,107,107,.32);box-shadow:0 0 22px rgba(255,45,120,.14)}
+.sc-o{background:linear-gradient(135deg,rgba(67,232,255,.13),rgba(123,97,255,.17));
+  border:1px solid rgba(67,232,255,.32);box-shadow:0 0 22px rgba(67,232,255,.14)}
+.sc-l{font-size:.5rem;letter-spacing:.18em;color:rgba(255,255,255,.38);font-weight:800;
+  text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center}
+.sc-v{font-family:var(--font-h);font-size:2rem}
+.sc-x .sc-v{background:linear-gradient(135deg,var(--x-a),var(--x-b));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 8px rgba(255,45,120,.65))}
+.sc-o .sc-v{background:linear-gradient(135deg,var(--o-a),var(--o-b));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 8px rgba(67,232,255,.65))}
+.sc-vs{font-size:.62rem;letter-spacing:.15em;color:rgba(255,255,255,.2);font-weight:800}
+@keyframes scF{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+.sc.flash{animation:scF .5s ease}
+.board.thinking{opacity:.6;pointer-events:none}
+
+@media(max-width:440px){
+  .board{grid-template-columns:repeat(3,82px);grid-template-rows:repeat(3,82px)}
+  .cell{width:82px;height:82px}.mode-btns{gap:10px}.mode-btn{width:124px}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+<canvas id="cv"></canvas>
+
+<!-- ══ SCREEN 1: MODE SELECT ══ -->
+<div class="screen active" id="sMode">
+  <div class="card">
+    <div class="hdr">
+      <div class="title">TIC TAC TOE</div>
+      <div class="badge">✨ Cosmic Edition ✨</div>
+    </div>
+    <div style="text-align:center">
+      <div class="mode-label">Choose Your Mode</div>
+      <div class="mode-btns">
+        <div class="mode-btn ai-btn" id="btnAI">
+          <div class="mode-icon">🤖</div>
+          <div class="mode-name">VS AI</div>
+          <div class="mode-desc">Challenge the computer</div>
+        </div>
+        <div class="mode-btn" id="btnFriend">
+          <div class="mode-icon">👥</div>
+          <div class="mode-name">VS FRIEND</div>
+          <div class="mode-desc">Pass &amp; play together</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: NAME ENTRY ══ -->
+<div class="screen" id="sNames">
+  <div class="card" style="min-width:290px;gap:16px">
+    <div class="hdr">
+      <div class="title" style="font-size:clamp(1.4rem,5vw,2rem)">ENTER NAMES</div>
+    </div>
+    <div class="name-section">
+      <div class="name-label lx">✕ Player X</div>
+      <input class="name-input ix" id="nameX" type="text" placeholder="Your name…" maxlength="14" autocomplete="off"/>
+    </div>
+    <div class="ndiv"><span>VS</span></div>
+    <div class="name-section" id="oSection">
+      <div class="name-label lo" id="oLabel">○ Player O</div>
+      <input class="name-input" id="nameO" type="text" placeholder="Friend's name…" maxlength="14" autocomplete="off"/>
+    </div>
+    <button class="btn" id="startBtn" style="margin-top:4px">LET'S PLAY ⚡</button>
+    <div class="back-link" id="backBtn">← Change Mode</div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3: GAME ══ -->
+<div class="screen" id="sGame">
+  <div class="card" style="gap:16px">
+    <div class="hdr">
+      <div class="title">TIC TAC TOE</div>
+      <div class="badge" id="modeBadge">⚡ VS AI ⚡</div>
+    </div>
+
+    <div class="turn-row">
+      <div class="dot dot-x" id="dotX"></div>
+      <div class="sbar"><div id="st">…</div></div>
+      <div class="dot dot-o" id="dotO"></div>
+    </div>
+
+    <div class="board" id="board">
+      <div class="cell" data-i="0"></div><div class="cell" data-i="1"></div><div class="cell" data-i="2"></div>
+      <div class="cell" data-i="3"></div><div class="cell" data-i="4"></div><div class="cell" data-i="5"></div>
+      <div class="cell" data-i="6"></div><div class="cell" data-i="7"></div><div class="cell" data-i="8"></div>
+
+      <div class="rov" id="rov">
+        <div class="r-emoji" id="rEmoji">🎉</div>
+        <div class="r-name"  id="rName">Player Wins!</div>
+        <div class="r-sub"   id="rSub">🎊 Congratulations 🎊</div>
+      </div>
+
+      <svg class="wsvg" viewBox="0 0 3 3" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gx" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#ff2d78"/>
+          </linearGradient>
+          <linearGradient id="go" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#43e8ff"/><stop offset="100%" stop-color="#7b61ff"/>
+          </linearGradient>
+        </defs>
+        <line id="wl" x1="0" y1="0" x2="0" y2="0" stroke="none"/>
+      </svg>
+    </div>
+
+    <div class="scores">
+      <div class="sc sc-x" id="scX"><div class="sc-l" id="lblX">Player X</div><div class="sc-v" id="valX">0</div></div>
+      <div class="sc-vs">VS</div>
+      <div class="sc sc-o" id="scO"><div class="sc-l" id="lblO">Player O</div><div class="sc-v" id="valO">0</div></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btnRound">NEW ROUND</button>
+      <button class="btn btn-ghost" id="btnMenu">⬅ MENU</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Particles ── */
+(()=>{
+  const cv=document.getElementById('cv'),c=cv.getContext('2d');
+  const rs=()=>{cv.width=innerWidth;cv.height=innerHeight};rs();window.addEventListener('resize',rs);
+  const cols=['#7b61ff','#43e8ff','#ffd166','#ff6b6b','#06d6a0','#c77dff'];
+  const pts=Array.from({length:90},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,
+    r:Math.random()*1.8+.3,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,
+    a:Math.random()*Math.PI*2,col:cols[Math.floor(Math.random()*cols.length)]}));
+  (function loop(){c.clearRect(0,0,cv.width,cv.height);
+    pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.a+=.007;
+      if(p.x<0)p.x=cv.width;if(p.x>cv.width)p.x=0;
+      if(p.y<0)p.y=cv.height;if(p.y>cv.height)p.y=0;
+      c.beginPath();c.arc(p.x,p.y,p.r,0,Math.PI*2);
+      c.fillStyle=p.col;c.globalAlpha=.35+.3*Math.sin(p.a);c.fill();});
+    c.globalAlpha=1;requestAnimationFrame(loop);})();
+})();
+
+/* ── Screens ── */
+const IDS={mode:'sMode',names:'sNames',game:'sGame'};
+function goTo(k){Object.values(IDS).forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById(IDS[k]).classList.add('active');}
+
+/* ── Global state ── */
+const WINS=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let mode='ai', nameX='Player X', nameO='AI';
+let board, over, turn; // turn: 'X'|'O'
+let scores={X:0,O:0};
+
+/* ── DOM ── */
+const cells  =[...document.querySelectorAll('.cell')];
+const boardEl=document.getElementById('board');
+const stEl   =document.getElementById('st');
+const wl     =document.getElementById('wl');
+const rov    =document.getElementById('rov');
+const rEmoji =document.getElementById('rEmoji');
+const rName  =document.getElementById('rName');
+const rSub   =document.getElementById('rSub');
+const dotX   =document.getElementById('dotX');
+const dotO   =document.getElementById('dotO');
+
+/* ── MODE SELECT ── */
+document.getElementById('btnAI').onclick=()=>{
+  mode='ai';
+  document.getElementById('nameO').disabled=true;
+  document.getElementById('nameO').placeholder='AI (auto)';
+  document.getElementById('oLabel').textContent='○ AI Opponent';
+  goTo('names');
+};
+document.getElementById('btnFriend').onclick=()=>{
+  mode='friend';
+  document.getElementById('nameO').disabled=false;
+  document.getElementById('nameO').placeholder="Friend's name…";
+  document.getElementById('oLabel').textContent='○ Player O';
+  goTo('names');
+};
+
+/* ── NAME ENTRY ── */
+document.getElementById('backBtn').onclick=()=>goTo('mode');
+document.getElementById('startBtn').onclick=startGame;
+['nameX','nameO'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{
+  if(e.key==='Enter')startGame();
+}));
+
+function startGame(){
+  const nx=document.getElementById('nameX').value.trim();
+  const no=document.getElementById('nameO').value.trim();
+  nameX=nx||'Player X';
+  nameO=mode==='ai'?'AI':(no||'Player O');
+  scores={X:0,O:0};
+  document.getElementById('lblX').textContent=nameX;
+  document.getElementById('lblO').textContent=nameO;
+  document.getElementById('valX').textContent=0;
+  document.getElementById('valO').textContent=0;
+  document.getElementById('modeBadge').textContent=
+    mode==='ai'?'⚡ VS AI Mode ⚡':'👥 Pass & Play';
+  goTo('game');
+  initRound();
+}
+
+/* ── ROUND ── */
+function initRound(){
+  board=Array(9).fill(null);over=false;turn='X';
+  cells.forEach(c=>c.className='cell');
+  wl.setAttribute('stroke','none');wl.classList.remove('show');
+  wl.setAttribute('x1',0);wl.setAttribute('y1',0);wl.setAttribute('x2',0);wl.setAttribute('y2',0);
+  rov.classList.remove('show');boardEl.classList.remove('thinking');
+  updateTurnUI();
+  if(mode==='ai'){setTimeout(doAiMove,680);}
+}
+
+function updateTurnUI(){
+  if(over)return;
+  dotX.classList.toggle('active',turn==='X');
+  dotO.classList.toggle('active',turn==='O');
+  if(mode==='ai'){
+    stEl.textContent=turn==='X'?'AI is thinking…':`${nameO}'s turn — play ○`;
+  } else {
+    const n=turn==='X'?nameX:nameO, s=turn==='X'?'✕':'○';
+    stEl.textContent=`${n}'s turn — play ${s}`;
+  }
+}
+
+/* ── HELPERS ── */
+function place(i,m){
+  board[i]=m;const c=cells[i];
+  c.classList.add(m==='X'?'cx':'co','pop');
+  setTimeout(()=>c.classList.remove('pop'),400);
+}
+function checkWin(b,m){for(const l of WINS)if(l.every(i=>b[i]===m))return l;return null}
+function isDraw(b){return b.every(Boolean)}
+
+function drawWinLine(line,m){
+  const pos=i=>({x:(i%3)+.5,y:Math.floor(i/3)+.5});
+  const s=pos(line[0]),e=pos(line[2]);
+  wl.setAttribute('x1',s.x);wl.setAttribute('y1',s.y);
+  wl.setAttribute('x2',e.x);wl.setAttribute('y2',e.y);
+  wl.setAttribute('stroke',m==='X'?'url(#gx)':'url(#go)');
+  wl.style.filter=m==='X'?'drop-shadow(0 0 5px #ff6b6b)':'drop-shadow(0 0 5px #43e8ff)';
+  setTimeout(()=>wl.classList.add('show'),30);
+}
+
+function flash(id){const el=document.getElementById(id);
+  el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),600);}
+
+function endGame(winner,line){
+  over=true;boardEl.classList.remove('thinking');
+  dotX.classList.remove('active');dotO.classList.remove('active');
+  if(winner){
+    drawWinLine(line,winner);
+    const wName=winner==='X'?nameX:nameO;
+    scores[winner]++;
+    document.getElementById(winner==='X'?'valX':'valO').textContent=scores[winner];
+    flash(winner==='X'?'scX':'scO');
+    rEmoji.textContent=winner==='X'&&mode==='ai'?'🤖':'🏆';
+    rName.textContent=`${wName} Wins!`;
+    rSub.textContent=winner==='X'&&mode==='ai'?'Better luck next time!':'🎊 Congratulations! 🎊';
+    stEl.textContent=`${wName} wins this round!`;
+  } else {
+    rEmoji.textContent='🤝';
+    rName.textContent="It's a Draw!";
+    rSub.textContent='Great game, both!';
+    stEl.textContent="It's a draw!";
+  }
+  rov.classList.add('show');
+}
+
+/* ── AI MINIMAX ── */
+function minimax(b,isMax){
+  if(checkWin(b,'X'))return 10;if(checkWin(b,'O'))return -10;if(isDraw(b))return 0;
+  let best=isMax?-Infinity:Infinity;
+  for(let i=0;i<9;i++){if(!b[i]){b[i]=isMax?'X':'O';
+    const s=minimax(b,!isMax);b[i]=null;
+    best=isMax?Math.max(best,s):Math.min(best,s);}}
+  return best;
+}
+function bestMove(){let best=-Infinity,move=-1;
+  for(let i=0;i<9;i++){if(!board[i]){board[i]='X';const s=minimax(board,false);board[i]=null;
+    if(s>best){best=s;move=i;}}}return move;}
+
+async function doAiMove(){
+  if(over)return;
+  boardEl.classList.add('thinking');
+  // Try Flask API first, fallback to local
+  try{
+    const res=await fetch('/api/ai-move',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({board})});
+    const data=await res.json();
+    place(data.move,'X');
+    boardEl.classList.remove('thinking');
+    const line=checkWin(board,'X');
+    if(line){endGame('X',line);return}
+    if(isDraw(board)){endGame(null);return}
+    turn='O';updateTurnUI();
+  }catch{
+    // local fallback
+    const m=bestMove();place(m,'X');
+    boardEl.classList.remove('thinking');
+    const line=checkWin(board,'X');
+    if(line){endGame('X',line);return}
+    if(isDraw(board)){endGame(null);return}
+    turn='O';updateTurnUI();
+  }
+}
+
+/* ── CELL CLICKS ── */
+cells.forEach(c=>c.addEventListener('click',()=>{
+  const i=+c.dataset.i;
+  if(over||board[i])return;
+  if(mode==='ai'&&turn==='X')return; // AI's turn
+  const m=turn;
+  place(i,m);
+  const line=checkWin(board,m);
+  if(line){endGame(m,line);return}
+  if(isDraw(board)){endGame(null);return}
+  if(mode==='friend'){
+    turn=turn==='X'?'O':'X';updateTurnUI();
+  } else {
+    turn='X';dotX.classList.add('active');dotO.classList.remove('active');
+    stEl.textContent='AI is thinking…';
+    setTimeout(doAiMove,450);
+  }
+}));
+
+/* ── BUTTONS ── */
+document.getElementById('btnRound').onclick=initRound;
+document.getElementById('btnMenu').onclick=()=>{
+  scores={X:0,O:0};
+  document.getElementById('nameX').value='';
+  document.getElementById('nameO').value='';
+  goTo('mode');
+};
+</script>
+</body>
+</html>
