@@ -1,108 +1,130 @@
 from flask import Flask, render_template, request, jsonify
-import os
 
-# ✅ FIX: absolute template path (important for Render)
-base_dir = os.path.abspath(os.path.dirname(__file__))
-template_dir = os.path.join(base_dir, 'templates')
+app = Flask(__name__)
 
-app = Flask(__name__, template_folder=template_dir)
+board = [""] * 9
+current_player = "X"
+mode = "ai"
 
-WINS = [
-    [0,1,2],[3,4,5],[6,7,8],
-    [0,3,6],[1,4,7],[2,5,8],
-    [0,4,8],[2,4,6]
-]
+scores = {"X": 0, "O": 0, "draw": 0}
 
-def check_winner(board, marker):
-    for line in WINS:
-        if all(board[i] == marker for i in line):
-            return line
+# ---------- WIN CHECK ----------
+def check_winner(b):
+    wins = [(0,1,2),(3,4,5),(6,7,8),
+            (0,3,6),(1,4,7),(2,5,8),
+            (0,4,8),(2,4,6)]
+    for i,j,k in wins:
+        if b[i] == b[j] == b[k] and b[i] != "":
+            return b[i]
+    if "" not in b:
+        return "Draw"
     return None
 
-def is_draw(board):
-    return all(cell is not None for cell in board)
-
-def minimax(board, is_max):
-    if check_winner(board, 'X'):
+# ---------- MINIMAX ----------
+def minimax(b, is_max):
+    winner = check_winner(b)
+    if winner == "X":
         return 10
-    if check_winner(board, 'O'):
+    elif winner == "O":
         return -10
-    if is_draw(board):
+    elif winner == "Draw":
         return 0
 
-    best = -float('inf') if is_max else float('inf')
-    for i in range(9):
-        if board[i] is None:
-            board[i] = 'X' if is_max else 'O'
-            score = minimax(board, not is_max)
-            board[i] = None
-            if is_max:
+    if is_max:
+        best = -1000
+        for i in range(9):
+            if b[i] == "":
+                b[i] = "X"
+                score = minimax(b, False)
+                b[i] = ""
                 best = max(best, score)
-            else:
+        return best
+    else:
+        best = 1000
+        for i in range(9):
+            if b[i] == "":
+                b[i] = "O"
+                score = minimax(b, True)
+                b[i] = ""
                 best = min(best, score)
-    return best
+        return best
 
-def best_move(board):
-    best = -float('inf')
-    move = -1
+def best_move():
+    best_score = -1000
+    move = None
     for i in range(9):
-        if board[i] is None:
-            board[i] = 'X'
+        if board[i] == "":
+            board[i] = "X"
             score = minimax(board, False)
-            board[i] = None
-            if score > best:
-                best = score
+            board[i] = ""
+            if score > best_score:
+                best_score = score
                 move = i
     return move
 
-# ✅ FIX: allow HEAD request (Render health check)
-@app.route('/', methods=['GET', 'HEAD'])
+# ---------- ROUTES ----------
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-# ✅ FIX: safe JSON handling
-@app.route('/api/ai-move', methods=['POST'])
-def ai_move():
-    data = request.get_json()
+@app.route("/start", methods=["POST"])
+def start():
+    global board, current_player, mode
 
-    if not data or 'board' not in data:
-        return jsonify({"error": "Invalid request"}), 400
+    data = request.json
+    mode = data.get("mode", "ai")
 
-    board = data.get('board')
+    board = [""] * 9
 
-    move = best_move(board)
-    board[move] = 'X'
+    if mode == "ai":
+        current_player = "O"
+        ai = best_move()
+        if ai is not None:
+            board[ai] = "O"
+            current_player = "X"
+    else:
+        current_player = "X"
 
-    win_line = check_winner(board, 'X')
-    draw = is_draw(board)
+    return jsonify({"board": board, "scores": scores})
 
-    return jsonify({
-        'move': move,
-        'win_line': win_line,
-        'draw': draw,
-        'winner': 'X' if win_line else None
-    })
+@app.route("/move", methods=["POST"])
+def move():
+    global current_player, board, scores
 
-# ✅ FIX: safe JSON handling
-@app.route('/api/check', methods=['POST'])
-def check():
-    data = request.get_json()
+    data = request.json
+    pos = data.get("move")
 
-    if not data or 'board' not in data or 'marker' not in data:
-        return jsonify({"error": "Invalid request"}), 400
+    if board[pos] == "":
+        board[pos] = current_player
 
-    board = data.get('board')
-    marker = data.get('marker')
+        winner = check_winner(board)
 
-    win_line = check_winner(board, marker)
-    draw = is_draw(board)
+        if not winner:
+            if mode == "ai":
+                current_player = "O"
+                ai = best_move()
+                if ai is not None:
+                    board[ai] = "O"
+                current_player = "X"
+                winner = check_winner(board)
+            else:
+                current_player = "O" if current_player == "X" else "X"
 
-    return jsonify({
-        'win_line': win_line,
-        'draw': draw,
-        'winner': marker if win_line else None
-    })
+        if winner:
+            if winner == "Draw":
+                scores["draw"] += 1
+            else:
+                scores[winner] += 1
 
-# ✅ production safe
-if __name__ == '__main__':
-    app.run()
+        return jsonify({
+            "board": board,
+            "winner": winner,
+            "current": current_player,
+            "scores": scores
+        })
+
+    return jsonify({"error": "Invalid move"})
+
+# ---------- RUN ----------
+if __name__ == "__main__":
+    app.run(debug=True)
