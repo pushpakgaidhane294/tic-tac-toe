@@ -108,7 +108,7 @@ tic-tac-toe/
 ### Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/tic-tac-toe.git
+git clone https://github.com/pushpakgaidhane294/tic-tac-toe.git
 ```
 
 Move into project
