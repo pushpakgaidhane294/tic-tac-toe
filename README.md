@@ -152,26 +152,6 @@ Start Command
 ```bash
 gunicorn app:app
 ```
-
----
-
-## 📸 Screenshots
-
-Add screenshots of:
-
-- Home Page
-- Game Board
-- AI Gameplay
-- Winner Popup
-- Scoreboard
-
-Example:
-
-```
-screenshots/
-├── home.png
-├── gameplay.png
-├── winner.png
 ```
 
 ---
@@ -204,4 +184,4 @@ Through this project, I learned:
 ---
 
 ## 👨‍💻 Author
-**Pushpak Gaidhane**
+**Pushpak Bala Gaidhane**
