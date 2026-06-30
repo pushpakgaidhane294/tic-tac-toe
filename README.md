@@ -184,4 +184,4 @@ Through this project, I learned:
 ---
 
 ## 👨‍💻 Author
-**Pushpak Bala Gaidhane**
+**Pushpak Gaidhane**
